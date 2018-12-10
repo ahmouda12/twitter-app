@@ -22,28 +22,83 @@
 
 
 import QtQuick 2.7
-import QtQuick.Controls 2.1
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.11
 
 import ArcGIS.AppFramework 1.0
 import ArcGIS.AppFramework.Controls 1.0
-//import Esri.ArcGISRuntime 100.3
+import Esri.ArcGISRuntime 100.3
 
-App {
+Rectangle {
     id: app
     width: 400
     height: 640
 
+    TabBar {
+        id: bar
+        width: parent.width
+        background: Rectangle {
+                color: "steelBlue"
+            }
 
-    Text {
-        anchors.fill: parent
+        TabButton {
+            text: "Tweets"
+        }
 
-        text: "{My App}"
-        font.pointSize: 24
-        color: "black"
-        wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        elide: Text.ElideRight
+        TabButton {
+            text: "Map"
+            onClicked: {map_slide.open()}
+        }
     }
+
+    StackLayout {
+        anchors{
+            top: bar.bottom
+            left: parent.left
+            right: parent.right
+            bottom: parent.bottom
+        }
+        currentIndex: bar.currentIndex
+
+        Item {
+           id: tweets_item
+           Rectangle {
+               anchors.fill: parent
+           }
+        }
+
+        Item {
+            id:map_item
+            Rectangle {
+                anchors.fill: parent
+
+                MapView {
+                    id : mapView
+                    anchors.fill: parent
+
+                    Map {
+                       id: map
+                       basemap: BasemapStreets {}
+//                     initialViewpoint: viewpoint
+                   }
+                }
+            }
+        }
+    }
+
+//    // Create the intial Viewpoint
+//    ViewpointCenter {
+//            id: viewpoint
+//            // Specify the center Point
+//            center: Point {
+//                x: 0
+//                y: 0
+//                spatialReference: SpatialReference { wkid: 102100 }
+//            }
+//            // Specify the scale
+//            targetScale: 10000000
+//        }
+
+
 }
 
