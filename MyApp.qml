@@ -80,7 +80,7 @@ Rectangle {
                        anchors.fill: parent
                        model: model
                        delegate: Text {
-                           text: jsondata
+                           text: jsondata; font.capitalization: Font.AllLowercase
                        }
                    }
 
@@ -115,24 +115,31 @@ Rectangle {
     }
 
 // request test data endpoint
+    property string bearerToken : "AAAAAAAAAAAAAAAAAAAAAI%2FBuAAAAAAAqbFCZnDgSTyebXFhM1d%2Brw7K8Hs%3DrhdQWj6iQ0LSmC8H4Nd950dpTEC97vJw8kuUQqppLP1wYZG8vp"
+    property string hashtag: "love"
+
     function getData() {
-        var xmlhttp = new XMLHttpRequest();
-        var url = "http://mysafeinfo.com/api/data?list=englishmonarchs&format=json";
-        xmlhttp.onreadystatechange=function() {
-            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                myData(xmlhttp.responseText);
+        var req = new XMLHttpRequest;
+            req.open("GET", 'https://api.twitter.com/1.1/search/tweets.json?q=%23'+ hashtag +'&count=100');
+            req.setRequestHeader("Authorization", "Bearer " + bearerToken);
+            req.onreadystatechange=function() {
+                if (req.readyState == 4 && req.status == 200) {
+                myData(req.responseText);
             }
         }
-        xmlhttp.open("GET", url, true);
-        xmlhttp.send();
+        req.send();
     }
 
     function myData(json) {
         var obj = JSON.parse(json);
-        obj.forEach (function(data){
-            console.log(data.id)
-            listview.model.append( {jsondata: data.nm +" "+ data.cty +" "+ data.hse +" "+ data.yrs })
-        });
+            obj.statuses.forEach (function(data){
+                if (data.coordinates){
+//                  if (data.place.bounding_box !== null){
+                        console.log(data.coordinates.coordinates)
+                        listview.model.append({jsondata: data.text })
+                    }
+//              }
+            });
     }
 
 //    Component.onCompleted: {
