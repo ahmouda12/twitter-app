@@ -34,6 +34,7 @@ Rectangle {
     width: 400
     height: 640
 
+// Create tab bars
     TabBar {
         id: bar
         width: parent.width
@@ -51,6 +52,7 @@ Rectangle {
         }
     }
 
+ // Create a layout for each tab bar
     StackLayout {
         anchors{
             top: bar.bottom
@@ -60,15 +62,41 @@ Rectangle {
         }
         currentIndex: bar.currentIndex
 
+// tweets layout
         Item {
-           id: tweets_item
+           id: tweets_layout
            Rectangle {
                anchors.fill: parent
+
+               Item {
+                   anchors.fill: parent
+
+                   ListModel {
+                       id: model
+                   }
+
+                   ListView {
+                       id: listview
+                       anchors.fill: parent
+                       model: model
+                       delegate: Text {
+                           text: jsondata
+                       }
+                   }
+
+                   Button {
+                       anchors.bottom: parent.bottom
+                       width: parent.width
+                       text: "GET Data"
+                       onClicked: getData()
+                   }
+               }
            }
         }
 
+// map layout
         Item {
-            id:map_item
+            id:map_layout
             Rectangle {
                 anchors.fill: parent
 
@@ -85,6 +113,31 @@ Rectangle {
             }
         }
     }
+
+// request test data endpoint
+    function getData() {
+        var xmlhttp = new XMLHttpRequest();
+        var url = "http://mysafeinfo.com/api/data?list=englishmonarchs&format=json";
+        xmlhttp.onreadystatechange=function() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                myData(xmlhttp.responseText);
+            }
+        }
+        xmlhttp.open("GET", url, true);
+        xmlhttp.send();
+    }
+
+    function myData(json) {
+        var obj = JSON.parse(json);
+        obj.forEach (function(data){
+            console.log(data.id)
+            listview.model.append( {jsondata: data.nm +" "+ data.cty +" "+ data.hse +" "+ data.yrs })
+        });
+    }
+
+//    Component.onCompleted: {
+//        getData()
+//    }
 
 //    // Create the intial Viewpoint
 //    ViewpointCenter {
