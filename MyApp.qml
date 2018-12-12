@@ -24,6 +24,9 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.11
+import QtQuick.Controls.Styles 1.4
+import QtGraphicalEffects 1.0
+import QtQuick.Controls.Material 2.1
 
 import ArcGIS.AppFramework 1.0
 import ArcGIS.AppFramework.Controls 1.0
@@ -31,9 +34,9 @@ import Esri.ArcGISRuntime 100.3
 
 Rectangle {
     id: app
-    width: 400
-    height: 640
-
+    width: 800
+    height: 600
+   property var buoyLocArray: []
 // Create tab bars
     TabBar {
         id: bar
@@ -48,7 +51,7 @@ Rectangle {
 
         TabButton {
             text: "Map"
-            onClicked: {map_slide.open()}
+//            onClicked: {map_slide.open()}
         }
     }
 
@@ -80,7 +83,14 @@ Rectangle {
                        anchors.fill: parent
                        model: model
                        delegate: Text {
-                           text: jsondata; font.capitalization: Font.AllLowercase
+//                           text: tweetText
+//                           text: "<a href="+ jsondata +"</a>"
+//                           onLinkActivated: Qt.openUrlExternally(jsondata)
+//                           Column{
+//                               spacing: 2
+                           Image {
+                               source: tweetImage
+                                }
                        }
                    }
 
@@ -108,15 +118,88 @@ Rectangle {
                        id: map
                        basemap: BasemapStreets {}
 //                     initialViewpoint: viewpoint
+//                       ViewpointCenter {
+//                                       targetScale: 7500
+
+//                                       Point {
+//                                           x: -226773
+//                                           y: 6550477
+//                                           spatialReference: SpatialReference { wkid: 3857 }
+//                                       }
+//                                   }
                    }
+
+//                    GraphicsOverlay {
+
+//                               // add graphic to overlay
+//                               Graphic {
+//                                   // define position of graphic
+//                                   Point {
+//                                       x: tweet[0]
+//                                       y: tweet[1]
+//                                       spatialReference: SpatialReference { wkid: 4326 }
+//                                   }
+
+//                                   // set graphic to be rendered as a red circle symbol
+//                                   SimpleMarkerSymbol {
+//                                       style: Enums.SimpleMarkerSymbolStyleCircle
+//                                       color: "red"
+//                                       size: 12
+//                                   }
+//                               }
+
+//                    }
+
+                    GraphicsOverlay {
+                            id: graphicsOverlay
+
+                    }
+
+                    SimpleMarkerSymbol {
+                        id: pointSymbol
+                        style: Enums.SimpleMarkerSymbolStyleCircle
+                        color: "red"
+                        size: 12
+                    }
+
                 }
             }
         }
     }
 
+// test adding create a graphic point
+property var tweetArray: []
+
+    Point {
+        x: 56.06127916736989
+        y: -2.6395150461199726
+        spatialReference: SpatialReference.createWgs84()
+
+        onComponentCompleted: {
+            tweetArray.push(this);
+        }
+    }
+
+//    GraphicsLayer {
+//        id: myGraphicsLayer
+
+//        Graphic {
+//            id: redCircle
+//            geometry: Point {
+//                json: {"spatialReference":{"latestWkid":3857,"wkid":102100}, "x": 9000000, "y": 6000000 }
+//            }
+//            symbol: SimpleMarkerSymbol {
+//                style: Enums.SimpleMarkerSymbolStyleCircle
+//                color: "red"
+//                size: 24
+//            }
+//        }
+
+
 // request test data endpoint
     property string bearerToken : "AAAAAAAAAAAAAAAAAAAAAI%2FBuAAAAAAAqbFCZnDgSTyebXFhM1d%2Brw7K8Hs%3DrhdQWj6iQ0LSmC8H4Nd950dpTEC97vJw8kuUQqppLP1wYZG8vp"
     property string hashtag: "love"
+    property variant tweet2: []
 
     function getData() {
         var req = new XMLHttpRequest;
@@ -125,7 +208,9 @@ Rectangle {
             req.onreadystatechange=function() {
                 if (req.readyState == 4 && req.status == 200) {
                 myData(req.responseText);
-            }
+                } /*else {
+                    console.log('error');
+                  }*/
         }
         req.send();
     }
@@ -136,28 +221,31 @@ Rectangle {
                 if (data.coordinates){
 //                  if (data.place.bounding_box !== null){
                         console.log(data.coordinates.coordinates)
-                        listview.model.append({jsondata: data.text })
+//                        tweet = data.coordinates.coordinates
+//                        console.log(tweet)
+                    tweet2 = [56.06127916736989,-2.6395150461199726]
+                        listview.model.append({tweetImage: data.user.profile_image_url_https})
+//                        listview.model.append({tweetText: data.text})
+//                        graphicsOverlay.graphics.append(tweet2, pointSymbol)
+//                    console.log(data.text)
+
+                    // append a graphic for test point
+                    tweetArray.forEach(function(buoyPoint) {
+                        graphicsOverlay.graphics.append(createGraphic(buoyPoint, pointSymbol));
+                        console.log(tweetArray)
+                    });
                     }
-//              }
             });
     }
 
-//    Component.onCompleted: {
-//        getData()
-//    }
 
-//    // Create the intial Viewpoint
-//    ViewpointCenter {
-//            id: viewpoint
-//            // Specify the center Point
-//            center: Point {
-//                x: 0
-//                y: 0
-//                spatialReference: SpatialReference { wkid: 102100 }
-//            }
-//            // Specify the scale
-//            targetScale: 10000000
-//        }
+    // create and return a graphic
+    function createGraphic(geometry, symbol) {
+        var graphic = ArcGISRuntimeEnvironment.createObject("Graphic");
+        graphic.geometry = geometry;
+        graphic.symbol = symbol;
+        return graphic;
+    }
 
 
 }
