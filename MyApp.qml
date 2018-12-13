@@ -42,9 +42,6 @@ Rectangle {
 
     property string bearerToken : "AAAAAAAAAAAAAAAAAAAAAI%2FBuAAAAAAAqbFCZnDgSTyebXFhM1d%2Brw7K8Hs%3DrhdQWj6iQ0LSmC8H4Nd950dpTEC97vJw8kuUQqppLP1wYZG8vp"
     property string tweetHashtag: ""
-    property variant tweetText: []
-    property variant tweetImage: []
-    property variant tweetLoc: []
     property string compassMode: "Compass"
     property string onMode: "On"
     property string stopMode: "Stop"
@@ -335,18 +332,12 @@ Rectangle {
 //                      console.log(data.coordinates.coordinates)
 
                     // append tweet text
-                    var tweetText2 = data.text
-                    tweetText.push(tweetText2)
-                    tweetText.forEach(function(text){
-                        listview.model.append({tweetText: text})
-                    })
+                    var tweetText = data.text
+                        listview.model.append({tweetText: tweetText})
 
                     // append tweet image
-                    var tweetImage2 = data.user.profile_image_url_https
-                    tweetImage.push(tweetImage2)
-                    tweetImage.forEach(function(image){
-                        listview.model.append({tweetImage: image})
-                    })
+                    var tweetImage = data.user.profile_image_url_https
+                        listview.model.append({tweetImage: tweetImage})
 
                     // create points in arcgis runtime enviroment
                     var coords = data.coordinates.coordinates
@@ -357,16 +348,17 @@ Rectangle {
                     pointBuilder.spatialReference = sr;
                     pointBuilder.setXY(coords[0], coords[1]);
                     geom = pointBuilder.geometry;
-                    console.log("geom:",geom)
-                    tweetLoc.push(geom)
+//                    console.log("geom:",geom)
+//                    tweetLoc.push(geom)
 
                     // append graphic for test point
-                    tweetLoc.forEach(function(loc) {
-                        graphicsOverlay.graphics.append(createGraphic(loc, pictureMarkerSymbol));
-                        console.log(tweetLoc)
-                    });
-                    }
+                        graphicsOverlay.graphics.append(createGraphic(geom, pictureMarkerSymbol));
+                }
             });
+
+        if (!obj.statuses.coordinates) {
+             listview.model.append({tweetText: "No geotaged tweets for this hashtag!"})
+        }
     }
 
     // create and return a graphic
