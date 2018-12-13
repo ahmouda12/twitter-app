@@ -23,6 +23,7 @@
 
 import QtQuick 2.7
 import QtQuick.Controls 2.4
+import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.11
 import QtQuick.Controls.Styles 1.4
 import QtGraphicalEffects 1.0
@@ -36,7 +37,7 @@ Rectangle {
     id: app
     width: 800
     height: 600
-   property var buoyLocArray: []
+
 // Create tab bars
     TabBar {
         id: bar
@@ -68,11 +69,9 @@ Rectangle {
 // tweets layout
         Item {
            id: tweets_layout
+
            Rectangle {
                anchors.fill: parent
-
-               Item {
-                   anchors.fill: parent
 
                    ListModel {
                        id: model
@@ -83,24 +82,44 @@ Rectangle {
                        anchors.fill: parent
                        model: model
                        delegate: Text {
-//                           text: tweetText
-//                           text: "<a href="+ jsondata +"</a>"
-//                           onLinkActivated: Qt.openUrlExternally(jsondata)
-//                           Column{
-//                               spacing: 2
-                           Image {
-                               source: tweetImage
-                                }
+                                    text: tweetText
+
+                                Image {
+                                    source: tweetImage
+                                    }
+                       }
+                 }
+
+                   RowLayout {
+                       id: searchBar
+                       anchors.bottom: parent.bottom
+                       width: parent.width
+                       height: 40
+                       Behavior on opacity { NumberAnimation{} }
+                       visible: opacity ? true : false
+                       TextField {
+                           id: searchText
+                           Behavior on opacity { NumberAnimation{} }
+                           visible: opacity ? true : false
+                           property bool ignoreTextChange: false
+                           placeholderText: qsTr("Search hashtags...")
+                           Layout.fillWidth: true
+                       }
+
+                       ToolButton {
+                           id: searchButton
+                           iconSource:  "baseline_search_black_18dp.png"
+                           onClicked: getData()
                        }
                    }
 
-                   Button {
-                       anchors.bottom: parent.bottom
-                       width: parent.width
-                       text: "GET Data"
-                       onClicked: getData()
-                   }
-               }
+//                   Button {
+//                       anchors.bottom: parent.bottom
+//                       width: parent.width
+//                       text: "GET Data"
+//                       onClicked: getData()
+//                   }
+//               }
            }
         }
 
@@ -180,28 +199,17 @@ property var tweetArray: []
         }
     }
 
-//    GraphicsLayer {
-//        id: myGraphicsLayer
-
-//        Graphic {
-//            id: redCircle
-//            geometry: Point {
-//                json: {"spatialReference":{"latestWkid":3857,"wkid":102100}, "x": 9000000, "y": 6000000 }
-//            }
-//            symbol: SimpleMarkerSymbol {
-//                style: Enums.SimpleMarkerSymbolStyleCircle
-//                color: "red"
-//                size: 24
-//            }
-//        }
-
-
 // request test data endpoint
     property string bearerToken : "AAAAAAAAAAAAAAAAAAAAAI%2FBuAAAAAAAqbFCZnDgSTyebXFhM1d%2Brw7K8Hs%3DrhdQWj6iQ0LSmC8H4Nd950dpTEC97vJw8kuUQqppLP1wYZG8vp"
-    property string hashtag: "love"
-    property variant tweet2: []
+    property string tweetHashtag: ""
+    property variant tweetText: []
+    property variant tweetImage: []
 
+ // connect to twitter api
     function getData() {
+        var hashtag = searchText.text
+        tweetHashtag = hashtag
+//        console.log(tweetHashtag)
         var req = new XMLHttpRequest;
             req.open("GET", 'https://api.twitter.com/1.1/search/tweets.json?q=%23'+ hashtag +'&count=100');
             req.setRequestHeader("Authorization", "Bearer " + bearerToken);
@@ -212,22 +220,30 @@ property var tweetArray: []
                     console.log('error');
                   }*/
         }
+
         req.send();
     }
 
+// append twitter data
     function myData(json) {
         var obj = JSON.parse(json);
             obj.statuses.forEach (function(data){
                 if (data.coordinates){
-//                  if (data.place.bounding_box !== null){
                         console.log(data.coordinates.coordinates)
-//                        tweet = data.coordinates.coordinates
-//                        console.log(tweet)
-                    tweet2 = [56.06127916736989,-2.6395150461199726]
-                        listview.model.append({tweetImage: data.user.profile_image_url_https})
-//                        listview.model.append({tweetText: data.text})
-//                        graphicsOverlay.graphics.append(tweet2, pointSymbol)
-//                    console.log(data.text)
+
+                    // append tweet text
+                    var tweetText2 = data.text
+                        tweetText.push(tweetText2)
+                    tweetText.forEach(function(text){
+                        listview.model.append({tweetText: text})
+                    })
+
+                    // append tweet image
+                    var tweetImage2 = data.user.profile_image_url_https
+                        tweetImage.push(tweetImage2)
+                    tweetImage.forEach(function(image){
+                        listview.model.append({tweetImage: image})
+                    })
 
                     // append a graphic for test point
                     tweetArray.forEach(function(buoyPoint) {
@@ -238,7 +254,6 @@ property var tweetArray: []
             });
     }
 
-
     // create and return a graphic
     function createGraphic(geometry, symbol) {
         var graphic = ArcGISRuntimeEnvironment.createObject("Graphic");
@@ -246,7 +261,6 @@ property var tweetArray: []
         graphic.symbol = symbol;
         return graphic;
     }
-
 
 }
 
