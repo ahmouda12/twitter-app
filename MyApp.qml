@@ -44,7 +44,7 @@ Rectangle {
     property string tweetHashtag: ""
     property variant tweetText: []
     property variant tweetImage: []
-    property variant tweetArray: []
+    property variant tweetLoc: []
     property string compassMode: "Compass"
     property string onMode: "On"
     property string stopMode: "Stop"
@@ -97,14 +97,23 @@ Rectangle {
                        id: listview
                        anchors.fill: parent
                        model: model
-                       delegate: Text {
-                                    text: tweetText
 
-                                Image {
-                                    source: tweetImage
+                       delegate: Column {
+                                spacing: 10
+
+                                    Row {
+
+                                        Text {
+                                            text: tweetText
+                                        }
+
+                                        Image {
+                                            source: tweetImage
+                                        }
+
                                     }
-                       }
-                 }
+                            }
+                    }
 
                    RowLayout {
                        id: searchBar
@@ -125,17 +134,9 @@ Rectangle {
                        ToolButton {
                            id: searchButton
                            iconSource:  "images/baseline_search_black_18dp.png"
-                           onClicked: getData()
+                           onClicked:  getData()
                        }
                    }
-
-//                   Button {
-//                       anchors.bottom: parent.bottom
-//                       width: parent.width
-//                       text: "GET Data"
-//                       onClicked: getData()
-//                   }
-//               }
            }
         }
 
@@ -164,17 +165,18 @@ Rectangle {
                            }
                        }
                 }
+
                     // create graphic layer
                     GraphicsOverlay {
                             id: graphicsOverlay
 
                     }
 
-                    SimpleMarkerSymbol {
-                        id: pointSymbol
-                        style: Enums.SimpleMarkerSymbolStyleCircle
-                        color: "red"
-                        size: 12
+                    PictureMarkerSymbol {
+                        id: pictureMarkerSymbol
+                        url: "images/RedStickpin.png"
+                        width: 30
+                        height: 30
                     }
 
                     // set the location display's position source
@@ -306,17 +308,6 @@ Rectangle {
         }
     }
 
-// test adding create graphic point
-    Point {
-        x: 56.06127916736989
-        y: -2.6395150461199726
-        spatialReference: SpatialReference.createWgs84()
-
-        onComponentCompleted: {
-            tweetArray.push(this);
-        }
-    }
-
  // connect to twitter api
     function getData() {
         var hashtag = searchText.text
@@ -341,26 +332,38 @@ Rectangle {
         var obj = JSON.parse(json);
             obj.statuses.forEach (function(data){
                 if (data.coordinates){
-                        console.log(data.coordinates.coordinates)
+//                      console.log(data.coordinates.coordinates)
 
                     // append tweet text
                     var tweetText2 = data.text
-                        tweetText.push(tweetText2)
+                    tweetText.push(tweetText2)
                     tweetText.forEach(function(text){
                         listview.model.append({tweetText: text})
                     })
 
                     // append tweet image
                     var tweetImage2 = data.user.profile_image_url_https
-                        tweetImage.push(tweetImage2)
+                    tweetImage.push(tweetImage2)
                     tweetImage.forEach(function(image){
                         listview.model.append({tweetImage: image})
                     })
 
+                    // create points in arcgis runtime enviroment
+                    var coords = data.coordinates.coordinates
+                    var geom;
+                    var wkid = 4326;
+                    var sr = ArcGISRuntimeEnvironment.createObject("SpatialReference", { wkid: wkid });
+                    var pointBuilder = ArcGISRuntimeEnvironment.createObject("PointBuilder");
+                    pointBuilder.spatialReference = sr;
+                    pointBuilder.setXY(coords[0], coords[1]);
+                    geom = pointBuilder.geometry;
+                    console.log("geom:",geom)
+                    tweetLoc.push(geom)
+
                     // append graphic for test point
-                    tweetArray.forEach(function(buoyPoint) {
-                        graphicsOverlay.graphics.append(createGraphic(buoyPoint, pointSymbol));
-                        console.log(tweetArray)
+                    tweetLoc.forEach(function(loc) {
+                        graphicsOverlay.graphics.append(createGraphic(loc, pictureMarkerSymbol));
+                        console.log(tweetLoc)
                     });
                     }
             });
