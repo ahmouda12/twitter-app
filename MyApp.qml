@@ -25,6 +25,8 @@ import QtQuick 2.7
 import QtQuick.Controls 2.4
 import QtQuick.Controls 1.4
 import QtQuick.Layouts 1.11
+import QtPositioning 5.3
+import QtSensors 5.3
 import QtQuick.Controls.Styles 1.4
 import QtGraphicalEffects 1.0
 import QtQuick.Controls.Material 2.1
@@ -37,6 +39,20 @@ Rectangle {
     id: app
     width: 800
     height: 600
+
+    property string bearerToken : "AAAAAAAAAAAAAAAAAAAAAI%2FBuAAAAAAAqbFCZnDgSTyebXFhM1d%2Brw7K8Hs%3DrhdQWj6iQ0LSmC8H4Nd950dpTEC97vJw8kuUQqppLP1wYZG8vp"
+    property string tweetHashtag: ""
+    property variant tweetText: []
+    property variant tweetImage: []
+    property variant tweetArray: []
+    property string compassMode: "Compass"
+    property string onMode: "On"
+    property string stopMode: "Stop"
+    property string closeMode: "Close"
+    property string currentModeText: stopMode
+    property string currentModeImage: "images/baseline_menu_black_18dp.png"
+
+
 
 // Create tab bars
     TabBar {
@@ -108,7 +124,7 @@ Rectangle {
 
                        ToolButton {
                            id: searchButton
-                           iconSource:  "baseline_search_black_18dp.png"
+                           iconSource:  "images/baseline_search_black_18dp.png"
                            onClicked: getData()
                        }
                    }
@@ -136,39 +152,19 @@ Rectangle {
                     Map {
                        id: map
                        basemap: BasemapStreets {}
-//                     initialViewpoint: viewpoint
-//                       ViewpointCenter {
-//                                       targetScale: 7500
 
-//                                       Point {
-//                                           x: -226773
-//                                           y: 6550477
-//                                           spatialReference: SpatialReference { wkid: 3857 }
-//                                       }
-//                                   }
-                   }
-
-//                    GraphicsOverlay {
-
-//                               // add graphic to overlay
-//                               Graphic {
-//                                   // define position of graphic
-//                                   Point {
-//                                       x: tweet[0]
-//                                       y: tweet[1]
-//                                       spatialReference: SpatialReference { wkid: 4326 }
-//                                   }
-
-//                                   // set graphic to be rendered as a red circle symbol
-//                                   SimpleMarkerSymbol {
-//                                       style: Enums.SimpleMarkerSymbolStyleCircle
-//                                       color: "red"
-//                                       size: 12
-//                                   }
-//                               }
-
-//                    }
-
+                       // start the location display
+                       onLoadStatusChanged: {
+                           if (loadStatus === Enums.LoadStatusLoaded) {
+                               // populate list model with modes
+                               autoPanListModel.append({name: compassMode, image: "images/baseline_compass_calibration_black_18dp.png"});
+                               autoPanListModel.append({name: onMode, image: "images/baseline_location_searching_black_18dp.png"});
+                               autoPanListModel.append({name: stopMode, image: "images/baseline_location_disabled_black_18dp.png"});
+                               autoPanListModel.append({name: closeMode, image: "images/baseline_close_black_18dp.png"});
+                           }
+                       }
+                }
+                    // create graphic layer
                     GraphicsOverlay {
                             id: graphicsOverlay
 
@@ -181,14 +177,136 @@ Rectangle {
                         size: 12
                     }
 
+                    // set the location display's position source
+                    locationDisplay {
+                        positionSource: PositionSource {
+                        }
+                        compass: Compass {}
+                    }
+            }
+
+                Rectangle {
+                    id: rect
+                    anchors.fill: parent
+                    visible: autoPanListView.visible
+                    color: "black"
+                    opacity: 0.5
+                }
+
+                ListView {
+                    id: autoPanListView
+                    anchors {
+                        right: parent.right
+                        top: parent.top
+                        margins: 20
+                    }
+                    visible: false
+                    width: parent.width
+                    height: 300
+                    spacing: 10
+                    model: ListModel {
+                        id: autoPanListModel
+                    }
+
+                    delegate: Row {
+                        id: autopanRow
+                        anchors.right: parent.right
+                        spacing: 10
+
+                        Text {
+                            text: name
+                            font.pixelSize: 16
+                            color: "white"
+                            MouseArea {
+                                anchors.fill: parent
+                                // When an item in the list view is clicked
+                                onClicked: {
+                                   autopanRow.updateAutoPanMode();
+                                }
+                            }
+                        }
+
+                        Image {
+                            source: image
+                            width: 25
+                            height: width
+                            MouseArea {
+                                anchors.fill: parent
+                                // When an item in the list view is clicked
+                                onClicked: {
+                                   autopanRow.updateAutoPanMode();
+                                }
+                            }
+                        }
+
+                        // set the appropriate auto pan mode
+                        function updateAutoPanMode() {
+                            switch (name) {
+                            case compassMode:
+                                mapView.locationDisplay.autoPanMode = Enums.LocationDisplayAutoPanModeCompassNavigation;
+                                mapView.locationDisplay.start();
+                                break;
+                            case onMode:
+                                mapView.locationDisplay.autoPanMode = Enums.LocationDisplayAutoPanModeOff;
+                                mapView.locationDisplay.start();
+                                break;
+                            case stopMode:
+                                mapView.locationDisplay.stop();
+                                break;
+                            }
+
+                            if (name !== closeMode) {
+                                currentModeText = name;
+                                currentModeImage = image;
+                            }
+
+                            // hide the list view
+                            currentAction.visible = true;
+                            autoPanListView.visible = false;
+                        }
+                    }
+                }
+
+                Row {
+                    id: currentAction
+                    anchors {
+                        right: parent.right
+                        top: parent.top
+                        margins: 25
+                    }
+                    spacing: 10
+
+                    Text {
+                        text: ""
+                        font.pixelSize: 20
+                        color: "white"
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                currentAction.visible = false;
+                                autoPanListView.visible = true;
+                            }
+                        }
+                    }
+
+                    Image {
+                        source: currentModeImage
+                        width: 25
+                        height: width
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                currentAction.visible = false;
+                                autoPanListView.visible = true;
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
-// test adding create a graphic point
-property var tweetArray: []
-
+// test adding create graphic point
     Point {
         x: 56.06127916736989
         y: -2.6395150461199726
@@ -198,12 +316,6 @@ property var tweetArray: []
             tweetArray.push(this);
         }
     }
-
-// request test data endpoint
-    property string bearerToken : "AAAAAAAAAAAAAAAAAAAAAI%2FBuAAAAAAAqbFCZnDgSTyebXFhM1d%2Brw7K8Hs%3DrhdQWj6iQ0LSmC8H4Nd950dpTEC97vJw8kuUQqppLP1wYZG8vp"
-    property string tweetHashtag: ""
-    property variant tweetText: []
-    property variant tweetImage: []
 
  // connect to twitter api
     function getData() {
@@ -245,7 +357,7 @@ property var tweetArray: []
                         listview.model.append({tweetImage: image})
                     })
 
-                    // append a graphic for test point
+                    // append graphic for test point
                     tweetArray.forEach(function(buoyPoint) {
                         graphicsOverlay.graphics.append(createGraphic(buoyPoint, pointSymbol));
                         console.log(tweetArray)
