@@ -24,7 +24,7 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.4
 import QtQuick.Controls 1.4
-import QtQuick.Layouts 1.11
+import QtQuick.Layouts 1.3
 import QtPositioning 5.3
 import QtSensors 5.3
 import QtQuick.Controls.Styles 1.4
@@ -65,7 +65,6 @@ Rectangle {
 
         TabButton {
             text: "Map"
-//            onClicked: {map_slide.open()}
         }
     }
 
@@ -82,60 +81,112 @@ Rectangle {
 // tweets layout
         Item {
            id: tweets_layout
-
-           Rectangle {
+           Image {
                anchors.fill: parent
-
-                   ListModel {
-                       id: model
-                   }
-
-                   ListView {
-                       id: listview
-                       anchors.fill: parent
-                       model: model
-
-                       delegate: Column {
-                                spacing: 10
-
-                                    Row {
-
-                                        Text {
-                                            text: tweetText
-                                        }
-
+               source: "images/bird-anim-sprites.png"
+           }
+                    ListView {
+                        id: listview
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: searchBar.top
+                            right: parent.right
+                        }
+                       clip:true
+                       orientation:ListView.Vertical
+                       flickableDirection: Flickable.VerticalFlick
+                       boundsBehavior: Flickable.StopAtBounds
+                       model: ListModel {id: listModel}
+                       delegate: Rectangle {
+                                   height: 70
+                                   width: parent.width
+                                   color: "#1da1f2"
+                                   border.width: 1
+                                   border.color: "#29b6e3"
+                                   RowLayout {
+                                     width: parent.width
+                                     anchors.verticalCenter: parent.verticalCenter
+                                     anchors {
+                                         fill: parent
+                                         leftMargin: 10
+                                         rightMargin: 10
+                                     }
                                         Image {
                                             source: tweetImage
                                         }
-
+                                        ColumnLayout {
+                                            Text {
+                                                text: tweetUser
+                                                Layout.fillWidth: true
+                                                color: "white"
+                                                font.pointSize: 12
+                                                font.bold: true
+                                            }
+                                            Text {
+                                                font.pixelSize: 12
+                                                text: tweetText
+                                                wrapMode: Text.Wrap
+                                                Layout.fillWidth: true
+                                                color: "white"
+                                            }
+                                        }
                                     }
+                                }
                             }
-                    }
 
                    RowLayout {
                        id: searchBar
                        anchors.bottom: parent.bottom
                        width: parent.width
-                       height: 40
-                       Behavior on opacity { NumberAnimation{} }
-                       visible: opacity ? true : false
+                       height: 70
                        TextField {
                            id: searchText
-                           Behavior on opacity { NumberAnimation{} }
-                           visible: opacity ? true : false
-                           property bool ignoreTextChange: false
-                           placeholderText: qsTr("Search hashtags...")
+                           font.pixelSize: 18
+                           style: TextFieldStyle {
+                                   textColor: "black"
+                                   background: Rectangle {
+                                               radius: 3
+                                               color: "#f3f3f4"
+                                               border.color: "steelBlue"
+                                               border.width: 1
+                                           }
+                           }
+                           placeholderText: qsTr("Search hashtag...")
                            Layout.fillWidth: true
+                           anchors {
+                               fill: parent
+                               leftMargin: 10
+                               rightMargin: 69
+                               topMargin: 10
+                               bottomMargin: 10
+                           }
+                           Image {
+                               anchors { top: parent.top; right: parent.right; bottom: parent.bottom; margins: 10 }
+                               id: clearText
+                               fillMode: Image.PreserveAspectFit
+                               smooth: true; visible: searchText.text
+                               source: "images/baseline_clear_black_18dp.png"
+                           MouseArea {
+                               id: clear
+                               anchors { horizontalCenter: parent.horizontalCenter; verticalCenter: parent.verticalCenter }
+                               height: searchText.height; width: searchText.height
+                               onClicked: {
+                                   searchText.text = ""
+                                   searchText.forceActiveFocus()
+                                   clearModel()
+                               }
+                            }
+                         }
                        }
-
-                       ToolButton {
+                       Button {
                            id: searchButton
                            iconSource:  "images/baseline_search_black_18dp.png"
+                           anchors { top: parent.top; right: parent.right; bottom: parent.bottom; margins: 10 }
                            onClicked:  getData()
                        }
                    }
-           }
-        }
+            }
 
 // map layout
         Item {
@@ -161,29 +212,24 @@ Rectangle {
                                autoPanListModel.append({name: closeMode, image: "images/baseline_close_black_18dp.png"});
                            }
                        }
-                }
-
+                    }
                     // create graphic layer
                     GraphicsOverlay {
                             id: graphicsOverlay
-
                     }
-
                     PictureMarkerSymbol {
                         id: pictureMarkerSymbol
                         url: "images/RedStickpin.png"
                         width: 30
                         height: 30
                     }
-
                     // set the location display's position source
                     locationDisplay {
                         positionSource: PositionSource {
                         }
                         compass: Compass {}
                     }
-            }
-
+                }
                 Rectangle {
                     id: rect
                     anchors.fill: parent
@@ -191,7 +237,6 @@ Rectangle {
                     color: "black"
                     opacity: 0.5
                 }
-
                 ListView {
                     id: autoPanListView
                     anchors {
@@ -206,12 +251,10 @@ Rectangle {
                     model: ListModel {
                         id: autoPanListModel
                     }
-
                     delegate: Row {
                         id: autopanRow
                         anchors.right: parent.right
                         spacing: 10
-
                         Text {
                             text: name
                             font.pixelSize: 16
@@ -224,7 +267,6 @@ Rectangle {
                                 }
                             }
                         }
-
                         Image {
                             source: image
                             width: 25
@@ -237,7 +279,6 @@ Rectangle {
                                 }
                             }
                         }
-
                         // set the appropriate auto pan mode
                         function updateAutoPanMode() {
                             switch (name) {
@@ -253,12 +294,10 @@ Rectangle {
                                 mapView.locationDisplay.stop();
                                 break;
                             }
-
                             if (name !== closeMode) {
                                 currentModeText = name;
                                 currentModeImage = image;
                             }
-
                             // hide the list view
                             currentAction.visible = true;
                             autoPanListView.visible = false;
@@ -274,7 +313,6 @@ Rectangle {
                         margins: 25
                     }
                     spacing: 10
-
                     Text {
                         text: ""
                         font.pixelSize: 20
@@ -287,7 +325,6 @@ Rectangle {
                             }
                         }
                     }
-
                     Image {
                         source: currentModeImage
                         width: 25
@@ -329,15 +366,18 @@ Rectangle {
         var obj = JSON.parse(json);
             obj.statuses.forEach (function(data){
                 if (data.coordinates){
-//                      console.log(data.coordinates.coordinates)
 
-                    // append tweet text
+                    // append tweet user name, text, & image
+                    var tweetUser = data.user.name
                     var tweetText = data.text
-                        listview.model.append({tweetText: tweetText})
-
-                    // append tweet image
+                    var textLength = tweetText.split(/\r\n|\r|\n/)
+                    var link = "http://google.com";
                     var tweetImage = data.user.profile_image_url_https
-                        listview.model.append({tweetImage: tweetImage})
+                    if (textLength.length > 1) {
+                        listview.model.append({tweetImage: tweetImage, tweetUser: tweetUser, tweetText: textLength[0] + '\n'+ "Read More...."})
+                    } else {
+                        listview.model.append({tweetImage: tweetImage, tweetUser: tweetUser, tweetText: textLength[0]})
+                    }
 
                     // create points in arcgis runtime enviroment
                     var coords = data.coordinates.coordinates
@@ -348,17 +388,15 @@ Rectangle {
                     pointBuilder.spatialReference = sr;
                     pointBuilder.setXY(coords[0], coords[1]);
                     geom = pointBuilder.geometry;
-//                    console.log("geom:",geom)
-//                    tweetLoc.push(geom)
 
                     // append graphic for test point
                         graphicsOverlay.graphics.append(createGraphic(geom, pictureMarkerSymbol));
                 }
             });
 
-        if (!obj.statuses.coordinates) {
-             listview.model.append({tweetText: "No geotaged tweets for this hashtag!"})
-        }
+//        if (!obj.statuses.coordinates) {
+//             listview.model.append({tweetText: "No geotaged tweets for this hashtag!"})
+//        }
     }
 
     // create and return a graphic
@@ -367,6 +405,12 @@ Rectangle {
         graphic.geometry = geometry;
         graphic.symbol = symbol;
         return graphic;
+    }
+
+    // clear the model
+    function clearModel() {
+        listModel.clear()
+        graphicsOverlay.graphics.clear()
     }
 
 }
