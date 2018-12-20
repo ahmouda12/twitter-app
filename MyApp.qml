@@ -82,7 +82,13 @@ Rectangle {
         Item {
            id: tweets_layout
            Image {
-               anchors.fill: parent
+//               anchors.fill: parent
+               anchors{
+                   top: parent.top
+                   left: parent.left
+                   right: parent.right
+                   bottom: searchBar.top
+               }
                source: "images/bird-anim-sprites.png"
            }
                     ListView {
@@ -101,9 +107,9 @@ Rectangle {
                        delegate: Rectangle {
                                    height: 70
                                    width: parent.width
-                                   color: "#1da1f2"
+                                   color: "#f5f8fa"
                                    border.width: 1
-                                   border.color: "#29b6e3"
+                                   border.color: "#e1e8ed"
                                    RowLayout {
                                      width: parent.width
                                      anchors.verticalCenter: parent.verticalCenter
@@ -117,18 +123,23 @@ Rectangle {
                                         }
                                         ColumnLayout {
                                             Text {
-                                                text: tweetUser
+                                                text: "<style>a:link { color: '#1da1f3'; }</style>" +
+                                                      '<a href="https://twitter.com/' + tweetUser +'" >' + tweetUser +' </a>'
                                                 Layout.fillWidth: true
-                                                color: "white"
+                                                color: "black"
                                                 font.pointSize: 12
                                                 font.bold: true
+                                                textFormat: Text.RichText
+                                                onLinkActivated: Qt.openUrlExternally(link)
                                             }
                                             Text {
                                                 font.pixelSize: 12
                                                 text: tweetText
                                                 wrapMode: Text.Wrap
                                                 Layout.fillWidth: true
-                                                color: "white"
+                                                color: "#14171a"
+                                                textFormat: Text.RichText
+                                                onLinkActivated: Qt.openUrlExternally(link)
                                             }
                                         }
                                     }
@@ -140,6 +151,15 @@ Rectangle {
                        anchors.bottom: parent.bottom
                        width: parent.width
                        height: 70
+                       Rectangle {
+                               color: '#f5f8fa'
+                               border.color: '#e1e8ed'
+                               Layout.fillWidth: true
+                               Layout.minimumWidth: parent.width
+                               Layout.preferredWidth: parent.width
+                               Layout.maximumWidth: parent.width
+                               Layout.minimumHeight: parent.height
+                       }
                        TextField {
                            id: searchText
                            font.pixelSize: 18
@@ -153,7 +173,6 @@ Rectangle {
                                            }
                            }
                            placeholderText: qsTr("Search hashtag...")
-                           Layout.fillWidth: true
                            anchors {
                                fill: parent
                                leftMargin: 10
@@ -169,7 +188,7 @@ Rectangle {
                                source: "images/baseline_clear_black_18dp.png"
                            MouseArea {
                                id: clear
-                               anchors { horizontalCenter: parent.horizontalCenter; verticalCenter: parent.verticalCenter }
+//                               anchors { horizontalCenter: parent.horizontalCenter; verticalCenter: parent.verticalCenter }
                                height: searchText.height; width: searchText.height
                                onClicked: {
                                    searchText.text = ""
@@ -346,7 +365,6 @@ Rectangle {
     function getData() {
         var hashtag = searchText.text
         tweetHashtag = hashtag
-//        console.log(tweetHashtag)
         var req = new XMLHttpRequest;
             req.open("GET", 'https://api.twitter.com/1.1/search/tweets.json?q=%23'+ hashtag +'&count=100');
             req.setRequestHeader("Authorization", "Bearer " + bearerToken);
@@ -365,20 +383,9 @@ Rectangle {
     function myData(json) {
         var obj = JSON.parse(json);
             obj.statuses.forEach (function(data){
+
+                // tweets with no coordinates
                 if (data.coordinates){
-
-                    // append tweet user name, text, & image
-                    var tweetUser = data.user.name
-                    var tweetText = data.text
-                    var textLength = tweetText.split(/\r\n|\r|\n/)
-                    var link = "http://google.com";
-                    var tweetImage = data.user.profile_image_url_https
-                    if (textLength.length > 1) {
-                        listview.model.append({tweetImage: tweetImage, tweetUser: tweetUser, tweetText: textLength[0] + '\n'+ "Read More...."})
-                    } else {
-                        listview.model.append({tweetImage: tweetImage, tweetUser: tweetUser, tweetText: textLength[0]})
-                    }
-
                     // create points in arcgis runtime enviroment
                     var coords = data.coordinates.coordinates
                     var geom;
@@ -389,14 +396,30 @@ Rectangle {
                     pointBuilder.setXY(coords[0], coords[1]);
                     geom = pointBuilder.geometry;
 
-                    // append graphic for test point
+                    // append graphic layers for pins
                         graphicsOverlay.graphics.append(createGraphic(geom, pictureMarkerSymbol));
                 }
-            });
 
-//        if (!obj.statuses.coordinates) {
-//             listview.model.append({tweetText: "No geotaged tweets for this hashtag!"})
-//        }
+                // tweets with coordinates
+                if (!data.coordinates) {
+                    // append tweet user name, text, & image
+                    var tweetId = data.id_str
+                    var tweetUser = data.user.screen_name
+                    var tweetText = data.text
+                    tweetText = tweetText.replace(/#(\S+)/g,"<style>a:link { color: '#1da1f3'; }</style>" +
+                                                  '<a href="http://twitter.com/hashtag/$1">#$1</a>');
+                    var textLength = tweetText.split(/\r\n|\r|\n/)
+                    var link = "http://google.com";
+                    var tweetImage = data.user.profile_image_url_https
+                    if (textLength.length > 1) {
+                        listview.model.append({tweetImage: tweetImage, tweetUser: tweetUser, tweetText: textLength[0] + '<br>' +
+                                                  "<style>a:link { color: '#1da1f3'; }</style>" +
+                                                  '<a href="https://twitter.com/user_name/statuses/'+ tweetId +'" >' + "Read more..." +' </a>'})
+                    } else {
+                        listview.model.append({tweetImage: tweetImage, tweetUser: tweetUser, tweetText: textLength[0]})
+                    }
+                }
+            });
     }
 
     // create and return a graphic
